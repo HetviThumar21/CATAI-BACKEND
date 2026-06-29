@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  admin
+}
+
+model user {
+  id String @id @default(uuid())
+
+  fullName String
+  email    String @unique
+  password String
+
+  role Role @default(student)
+
+  catgptconversations catgptconversation[]
+
+  studentprofile     studentprofile?
+  chats              chat[]
+  profileevaluations profileevaluation[]
+  studyplans         studyplan[]
+  collegepredictions collegeprediction[]
+  tasks              task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model studentprofile {
+  id String @id @default(cuid())
+
+  userid String @unique
+  user user @relation(fields: [userid], references: [id])
+
+  // Basic Details
+  educationstage String?
+  reservationcategory String?
+  gender String?
+
+  // Academics
+  tenthpercentage Float?
+  twelfthpercentage Float?
+  graduationscore Float?
+  graduationstream String?
+
+  // Experience
+  isexperienced Boolean @default(false)
+  experiencemonths Int?
+  internshipcount Int?
+  currentrole String?
+  leadershipexperience Boolean @default(false)
+
+  // Extra Profile
+  certifications String?
+  leadershipactivities String?
+  competitions String?
+
+  // MBA Goals
+  targetexam String?
+  attemptyear Int?
+  targetpercentile Float?
+  targetcolleges String?
+
+  // Study
+  weakareas String?
+  dailystudyhours Int?
+
+  createdat DateTime @default(now())
+  updatedat DateTime @updatedAt
+}
+
+model chat {
+  id String @id @default(cuid())
+
+  userid String
+  user   user   @relation(fields: [userid], references: [id])
+
+  message  String @db.Text
+  response String @db.Text
+
+  createdat DateTime @default(now())
+}
+
+model profileevaluation {
+  id String @id @default(cuid())
+
+  userid String
+  user   user   @relation(fields: [userid], references: [id])
+
+  overallscore Int
+
+  profilesummary String @db.Text
+
+  academicanalysis String @db.Text
+
+  workexperienceanalysis String @db.Text
+
+  achievementsanalysis String @db.Text
+
+  examreadiness String @db.Text
+
+  collegesuitability Json
+
+  gapanalysis String @db.Text
+
+  roadmap String @db.Text
+
+  airecommendations String @db.Text
+
+  createdat DateTime @default(now())
+
+  updatedat DateTime @updatedAt
+}
+
+model studyplan {
+  id String @id @default(cuid())
+
+  userid String
+  user   user   @relation(fields: [userid], references: [id])
+
+  targetexam       String
+  targetpercentile Float
+  examdate         DateTime
+
+  roadmap      String @db.Text
+  monthlyplan  String @db.Text
+  weeklyplan   String @db.Text
+  dailytasks   String @db.Text
+  revisionplan String @db.Text
+
+  createdat DateTime @default(now())
+}
+
+model collegeprediction {
+  id String @id @default(cuid())
+
+  userid String
+  user user @relation(fields: [userid], references: [id])
+
+  percentile Float
+
+  dream Json
+  target Json
+  safe Json
+
+  analysis String? @db.Text
+
+  createdat DateTime @default(now())
+}
+
+model College {
+
+ id String @id @default(cuid())
+
+ name String
+
+ shortName String?
+
+ city String
+
+ state String
+
+ type String
+
+ nirfRank Int?
+
+ fees Float?
+
+ avgPackage Float?
+
+ highestPackage Float?
+
+ officialWebsite String?
+
+ establishedYear Int?
+
+ seats Int?
+
+ imageUrl String?
+
+ cutoffs CollegeCutoff[]
+
+ criteria AdmissionCriteria[]
+
+ placements PlacementStatistic[]
+}
+
+model task {
+  id String @id @default(cuid())
+
+  userid String
+  user user @relation(fields: [userid], references: [id])
+
+  title String
+  description String?
+
+  priority String @default("medium")
+
+  status String @default("pending")
+
+  duedate DateTime?
+
+  createdat DateTime @default(now())
+  updatedat DateTime @updatedAt
+}
+
+model CollegeCutoff {
+
+ id String @id @default(cuid())
+
+ collegeId String
+
+ college College @relation(fields:[collegeId],references:[id])
+
+ exam String
+
+ year Int
+
+ category String
+
+ gender String?
+
+ academicBackground String?
+
+ overallPercentile Float
+
+ varcCutoff Float?
+
+ dilrCutoff Float?
+
+ qaCutoff Float?
+}
+
+model document {
+  id String @id @default(cuid())
+
+  title    String
+  category String
+
+  filename String
+  filepath String
+
+  createdat DateTime @default(now())
+}
+
+model adminprompt {
+  id String @id @default(cuid())
+
+  name       String
+  prompttext String @db.Text
+
+  createdat DateTime @default(now())
+  updatedat DateTime @updatedAt
+}
+
+model catgptconversation {
+  id String @id @default(cuid())
+
+  userid String
+  user   user   @relation(fields: [userid], references: [id])
+
+  question String @db.Text
+
+  answer String @db.Text
+
+  createdat DateTime @default(now())
+}
+
+model MockTest{
+
+id
+
+userId
+
+overallPercentile
+
+overallScore
+
+varcScore
+
+dilrScore
+
+qaScore
+
+accuracy
+
+timeTaken
+
+createdAt
+}
+
+model PracticeQuestion {
+
+   id String @id @default(cuid())
+
+   topic String
+
+   subject String
+
+   difficulty String
+
+   source String
+
+   questionUrl String
+
+   explanationUrl String
+
+}
+
+model StudyResource{
+
+    id String @id @default(cuid())
+
+    subject String
+
+    topic String
+
+    type String
+
+    title String
+
+    url String
+
+}

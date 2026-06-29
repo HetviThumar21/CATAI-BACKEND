@@ -1,0 +1,1 @@
+// DATABASE_URL="postgresql://neondb_owner:npg_2JUDYtb5aPyW@ep-rapid-resonance-ap8khc4h-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=requirepostgresql://neondb_owner:npg_2JUDYtb5aPyW@ep-rapid-resonance-ap8khc4h.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
