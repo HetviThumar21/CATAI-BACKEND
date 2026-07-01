@@ -4,6 +4,9 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  StudyPlanEngine,
+} from "./study-plan.engine";
 
 @Injectable()
 export class StudyPlanService {
@@ -42,175 +45,137 @@ export class StudyPlanService {
       );
     }
 
-    let roadmap = '';
-let monthlyPlan = '';
-let weeklyPlan = '';
-let dailyTasks = '';
-let revisionPlan = '';
+    const weakTopics =
+  await this.prisma.topicPerformance.findMany({
+    where: {
+      userId,
+      accuracy: {
+        lt: 70,
+      },
+    },
+    orderBy: {
+      accuracy: 'asc',
+    },
+    take: 5,
+  });
 
-if (latestReport.overallscore >= 80) {
+const weakTopicNames =
+  weakTopics.map(t => t.topic);
 
-  roadmap = `
-Target top IIMs and premier MBA colleges.
-Focus on CAT mock tests, GDPI preparation, and interview readiness.
-Continue profile building through leadership activities and certifications.
-`;
+  const strengths: string[] = [];
 
-  monthlyPlan = `
-Month 1: Advanced Quant Practice
-Month 2: Advanced DILR Sets
-Month 3: Mock Test Focus
-Month 4: Profile Building
-Month 5: GDPI Preparation
-Month 6: Final CAT Revision
-`;
+if ((profile.tenthpercentage ?? 0) >= 85)
+  strengths.push("Strong Academic Foundation");
 
-  weeklyPlan = `
-Monday: Quant
-Tuesday: DILR
-Wednesday: VARC
-Thursday: Advanced Practice
-Friday: Mock Test
-Saturday: Mock Analysis
-Sunday: Revision
-`;
+if ((profile.twelfthpercentage ?? 0) >= 85)
+  strengths.push("Consistent School Performance");
 
-  dailyTasks = `
-2 Hours Quant
-1 Hour DILR
-1 Hour VARC
-1 Mock Review
-`;
+if ((profile.graduationscore ?? 0) >= 8)
+  strengths.push("Good Graduation Performance");
 
-  revisionPlan = `
-Weekly revision every Sunday.
-2 Mock tests per week.
-GDPI preparation from Month 4.
-`;
+if (profile.isexperienced)
+  strengths.push("Work Experience");
+
+if ((profile.internshipcount ?? 0) > 0)
+ {
+  strengths.push(
+    `${profile.internshipcount ?? 0} Internship${
+      (profile.internshipcount ?? 0) > 1 ? "s" : ""
+    }`
+  );
+}
+if (profile.leadershipexperience)
+  strengths.push("Leadership Experience");
+
+if (profile.certifications?.trim())
+  strengths.push("Professional Certifications");
+
+if (profile.competitions?.trim())
+  strengths.push("Competition Participation");
+
+if (profile.graduationstream?.trim())
+  strengths.push(`${profile.graduationstream} Background`);
+
+const weaknesses: string[] = [];
+
+if ((profile.tenthpercentage ?? 0) < 70)
+  weaknesses.push("Low 10th Percentage");
+
+if ((profile.twelfthpercentage ?? 0) < 70)
+  weaknesses.push("Low 12th Percentage");
+
+if ((profile.graduationscore ?? 0) < 7)
+  weaknesses.push("Low Graduation Score");
+
+weaknesses.push(...weakTopicNames);
+
+if (!profile.isexperienced)
+  weaknesses.push("Limited Industry Exposure");
+
+if ((profile.dailystudyhours ?? 0) < 3)
+  weaknesses.push("Low Daily Study Time");
+
+if (!profile.certifications?.trim())
+  weaknesses.push("No Professional Certifications");
+
+if (!profile.competitions?.trim())
+  weaknesses.push("Limited Competitive Exposure");
+
+
+
+const planContext = {
+  profile,
+  latestReport,
+
+  strengths,
+  weaknesses,
+  weakTopicNames,
+
+  recommendations: [] as string[],
+
+  mockTests: [],
+
+  topicPerformance: [],
+};
+
+if ((profile.tenthpercentage ?? 0) < 70) {
+  planContext.recommendations.push(
+    "Compensate lower school academics with an exceptional CAT percentile."
+  );
 }
 
-else if (latestReport.overallscore >= 60) {
-
-  roadmap = `
-Improve CAT percentile through structured preparation.
-Strengthen weak sections and build certifications.
-Track progress through weekly mock tests.
-`;
-
-  monthlyPlan = `
-Month 1: Quant Foundation
-Month 2: DILR Strengthening
-Month 3: VARC Improvement
-Month 4: Mock Practice
-Month 5: Sectional Tests
-Month 6: Final Revision
-`;
-
-  weeklyPlan = `
-Monday: Quant
-Tuesday: DILR
-Wednesday: VARC
-Thursday: Practice Questions
-Friday: Mock Test
-Saturday: Analysis
-Sunday: Revision
-`;
-
-  dailyTasks = `
-1 Hour Quant
-1 Hour DILR
-1 Hour VARC
-30 Minutes Revision
-`;
-
-  revisionPlan = `
-Weekly revision every Sunday.
-1 Mock test per week.
-Monthly performance review.
-`;
+if ((profile.graduationscore ?? 0) < 7) {
+  planContext.recommendations.push(
+    "Strengthen your profile through certifications, live projects, and internships."
+  );
 }
 
-else {
-
-  roadmap = `
-Focus on building aptitude fundamentals.
-Improve academics through certifications and projects.
-Develop a disciplined CAT preparation routine.
-`;
-
-  monthlyPlan = `
-Month 1: Basic Quant
-Month 2: Basic DILR
-Month 3: Reading Habit
-Month 4: Sectional Practice
-Month 5: Mock Introduction
-Month 6: Improvement Cycle
-`;
-
-  weeklyPlan = `
-Monday: Quant Basics
-Tuesday: DILR Basics
-Wednesday: Reading Practice
-Thursday: Quant
-Friday: Practice Test
-Saturday: Analysis
-Sunday: Revision
-`;
-
-  dailyTasks = `
-1 Hour Quant Basics
-1 Hour Reading
-30 Minutes DILR
-30 Minutes Revision
-`;
-
-  revisionPlan = `
-Weekly revision every Sunday.
-Sectional test every 2 weeks.
-Focus on fundamentals before mocks.
-`;
+if (!profile.isexperienced) {
+  planContext.recommendations.push(
+    "Build industry exposure through internships, freelancing, research projects, or volunteering."
+  );
 }
 
-   
-//  const roadmap = `
-// Focus on CAT preparation through consistent study and mock tests.
-// Improve weak areas identified in your profile evaluation.
-// Track progress monthly and optimize preparation strategy.
-// `;
+if ((profile.dailystudyhours ?? 0) < 3) {
+  planContext.recommendations.push(
+    "Increase study time gradually to at least 3–4 focused hours per day."
+  );
+}
 
-//     const monthlyPlan = `
-// Month 1: Build Quant fundamentals
-// Month 2: Strengthen DILR concepts
-// Month 3: Improve VARC performance
-// Month 4: Increase mock test frequency
-// Month 5: Advanced revision and analysis
-// Month 6: Final CAT preparation
-// `;
+if (!profile.certifications?.trim()) {
+  planContext.recommendations.push(
+    "Complete at least two industry-recognized certifications before CAT."
+  );
+}
 
-//     const weeklyPlan = `
-// Monday: Quant
-// Tuesday: DILR
-// Wednesday: VARC
-// Thursday: Quant Practice
-// Friday: Mock Test
-// Saturday: Mock Analysis
-// Sunday: Revision
-// `;
 
-//     const dailyTasks = `
-// ${profile.dailystudyhours ?? 3} Hours Study
 
-// • Quant Practice
-// • DILR Practice
-// • VARC Reading
-// • Revision
-// `;
+console.log("Study Plan Context", planContext);
 
-//     const revisionPlan = `
-// Weekly revision every Sunday.
-// Monthly revision after every four weeks.
-// Full CAT mocks during the final preparation phase.
-// `;
+const engine = new StudyPlanEngine();
+
+const generatedPlan =
+  engine.generate(planContext);
 
 
         const examDate =
@@ -233,15 +198,15 @@ examDate.setMonth(
             examdate: examDate,
 
 
-          roadmap,
+          roadmap: generatedPlan.roadmap,
 
-          monthlyplan: monthlyPlan,
+monthlyplan: generatedPlan.monthlyPlan,
 
-          weeklyplan: weeklyPlan,
+weeklyplan: generatedPlan.weeklyPlan,
 
-          dailytasks: dailyTasks,
+dailytasks: generatedPlan.dailyTasks,
 
-          revisionplan: revisionPlan,
+revisionplan: generatedPlan.revisionPlan,
         },
       });
 
@@ -271,10 +236,10 @@ examDate.setMonth(
   }
 
   async getOne(id: string) {
-    return this.prisma.studyplan.findUnique({
-      where: {
-        id,
-      },
-    });
-  }
+  return this.prisma.studyplan.findUnique({
+    where: {
+      id,
+    },
+  });
+}
 }

@@ -10,11 +10,10 @@ export class CollegepredictorService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async predict(
+ async predict(
   userId: string,
   percentile: number,
 ) {
-
   const latestReport =
     await this.prisma.profileevaluation.findFirst({
       where: {
@@ -38,138 +37,100 @@ export class CollegepredictorService {
   const workExperience =
     profile?.isexperienced ?? false;
 
-  let dream: string[] = [];
-  let target: string[] = [];
-  let safe: string[] = [];
+  const latestYear = await this.prisma.collegeCutoff.aggregate({
+  _max: {
+    year: true,
+  },
+});
 
-  let analysis = '';
+const cutoffs = await this.prisma.collegeCutoff.findMany({
+  where: {
+    exam: "CAT",
+    year: latestYear._max.year ?? new Date().getFullYear(),
+  },
+  include: {
+    college: true,
+  },
+});
 
-  // TOP PROFILE
+  const dream: string[] = [];
+  const target: string[] = [];
+  const safe: string[] = [];
+
+
+
+ for (const cutoff of cutoffs) {
   if (
-    percentile >= 99 &&
-    profileScore >= 85
+    cutoff.category !== "General"
   ) {
-    dream = [
-      'IIM Ahmedabad',
-      'IIM Bangalore',
-      'IIM Calcutta',
-      'FMS Delhi',
-    ];
-
-    target = [
-      'IIM Lucknow',
-      'IIM Indore',
-      'SPJIMR',
-      'MDI Gurgaon',
-    ];
-
-    safe = [
-      'IIFT Delhi',
-      'IMT Ghaziabad',
-    ];
-
-    analysis =
-      'Your profile is highly competitive for top MBA colleges. A 99+ percentile combined with your profile score makes you a strong candidate for IIMs and other Tier-1 institutes.';
+    continue;
   }
 
-  // STRONG PROFILE
-  else if (
-    percentile >= 95 &&
-    profileScore >= 75
-  ) {
-    dream = [
-      'IIM Indore',
-      'IIM Kozhikode',
-      'SPJIMR',
-    ];
-
-    target = [
-      'MDI Gurgaon',
-      'IIFT Delhi',
-      'IMT Ghaziabad',
-    ];
-
-    safe = [
-      'IMI Delhi',
-      'XIMB',
-      'TAPMI',
-    ];
-
-    analysis =
-      'Your profile is competitive for several Tier-1 MBA colleges. Improving CAT performance and interview preparation can significantly improve admission chances.';
-  }
-
-  // AVERAGE PROFILE
-  else if (
-    percentile >= 90
-  ) {
-    dream = [
-      'IMT Ghaziabad',
-      'XIMB',
-    ];
-
-    target = [
-      'IMI Delhi',
-      'TAPMI',
-      'FORE School of Management',
-    ];
-
-    safe = [
-      'Jaipuria',
-      'IPE Hyderabad',
-    ];
-
-    analysis =
-      'You have a reasonable chance at good MBA colleges. Strengthening your profile and improving CAT performance can help you move into higher-ranked institutions.';
-  }
-
-  // LOW PROFILE
-  else {
-    dream = [
-      'IMI Delhi',
-    ];
-
-    target = [
-      'Jaipuria',
-      'IPE Hyderabad',
-    ];
-
-    safe = [
-      'ICFAI',
-      'Alliance University',
-    ];
-
-    analysis =
-      'Your current profile requires improvement before targeting highly competitive MBA colleges. Focus on CAT preparation, certifications, and profile building.';
-  }
-
-  // Work Experience Bonus
   if (
-    workExperience &&
-    percentile >= 95
+    cutoff.varcCutoff &&
+    cutoff.dilrCutoff &&
+    cutoff.qaCutoff
   ) {
-    target.push(
-      'SJMSOM IIT Bombay',
-    );
-
-    target.push(
-      'DoMS IIT Delhi',
-    );
+    // Later we'll compare sectionals here
   }
 
-  const prediction =
-    await this.prisma.collegeprediction.create({
-      data: {
-        userid: userId,
-        percentile,
-        dream,
-        target,
-        safe,
-        analysis,
-      },
-    });
+  const diff = percentile - cutoff.overallPercentile;
 
-  return prediction;
+  if (diff >= 3) {
+    safe.push(JSON.stringify({
+  id: cutoff.college.id,
+  name: cutoff.college.name,
+  city: cutoff.college.city,
+  state: cutoff.college.state,
+  nirfRank: cutoff.college.nirfRank,
+  fees: cutoff.college.fees,
+  avgPackage: cutoff.college.avgPackage,
+  website: cutoff.college.officialWebsite,
+}));
+
+target.push(JSON.stringify({
+  id: cutoff.college.id,
+  name: cutoff.college.name,
+  city: cutoff.college.city,
+  state: cutoff.college.state,
+  nirfRank: cutoff.college.nirfRank,
+  fees: cutoff.college.fees,
+  avgPackage: cutoff.college.avgPackage,
+  website: cutoff.college.officialWebsite,
+}));
+
+dream.push(JSON.stringify({
+  id: cutoff.college.id,
+  name: cutoff.college.name,
+  city: cutoff.college.city,
+  state: cutoff.college.state,
+  nirfRank: cutoff.college.nirfRank,
+  fees: cutoff.college.fees,
+  avgPackage: cutoff.college.avgPackage,
+  website: cutoff.college.officialWebsite,
+}));
+  }
+}
+
+  // Bonus for work experience
+  if (workExperience && percentile >= 95) {
+    target.push("SJMSOM IIT Bombay");
+    target.push("DoMS IIT Delhi");
+  }
+
+  const uniqueDream = [...new Set(dream)];
+const uniqueTarget = [...new Set(target)];
+const uniqueSafe = [...new Set(safe)];
+
+  const analysis = `Based on your CAT percentile (${percentile}) and profile score (${profileScore}), college recommendations have been generated using the latest college cutoff database.`;
+return {
+  percentile,
+  profileScore,
+  analysis,
+  dream: uniqueDream,
+  target: uniqueTarget,
+  safe: uniqueSafe,
+};
 }
 
   async history(
