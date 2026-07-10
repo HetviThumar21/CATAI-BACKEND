@@ -486,4 +486,65 @@ async getOne(id: string) {
     },
   });
 }
+async dashboardInsight(userId: string) {
+  const report = await this.prisma.profileevaluation.findFirst({
+    where: {
+      userid: userId,
+    },
+    orderBy: {
+      createdat: 'desc',
+    },
+  });
+
+  const profile = await this.prisma.studentprofile.findUnique({
+    where: {
+      userid: userId,
+    },
+  });
+
+  const plan = await this.prisma.studyplan.findFirst({
+    where: {
+      userid: userId,
+    },
+    orderBy: {
+      createdat: 'desc',
+    },
+  });
+
+  const prediction =
+    await this.prisma.collegeprediction.findFirst({
+      where: {
+        userid: userId,
+      },
+      orderBy: {
+        createdat: 'desc',
+      },
+    });
+
+  if (!report) {
+    throw new NotFoundException(
+      'Profile evaluation not found',
+    );
+  }
+
+  let message = '';
+
+  if (report.overallscore >= 90) {
+    message = `Excellent progress. Your profile score is ${report.overallscore}/100. Continue targeting ${profile?.targetpercentile} percentile and focus on GD-PI preparation.`;
+  } else if (report.overallscore >= 80) {
+    message = `You're performing well with a profile score of ${report.overallscore}/100. Improving your weak areas and maintaining consistency can significantly improve your admission chances.`;
+  } else if (report.overallscore >= 70) {
+    message = `Your profile has good potential. Focus on ${report.gapanalysis}. Completing your weekly study plan consistently will strengthen your MBA profile.`;
+  } else {
+    message = `Your profile needs improvement. Complete your study plan, strengthen academics, and improve CAT preparation to increase your chances for top MBA colleges.`;
+  }
+
+  return {
+    title: 'CATGPT Insight',
+    message,
+    recommendation: report.airecommendations,
+    roadmap: plan?.roadmap ?? null,
+    dreamCollege: prediction?.dream ?? null,
+  };
+}
 }

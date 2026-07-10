@@ -14,7 +14,10 @@ export class StudyPlanService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async generate(userId: string) {
+  async generate(
+    userId: string,
+    dto: any,
+) {
     const profile =
       await this.prisma.studentprofile.findUnique({
         where: {
@@ -172,46 +175,275 @@ if (!profile.certifications?.trim()) {
 
 console.log("Study Plan Context", planContext);
 
+// Override profile values with Wizard values
+planContext.profile.targetexam =
+  dto.targetExam ?? planContext.profile.targetexam;
+
+planContext.profile.targetpercentile =
+  dto.targetPercentile
+    ? Number(dto.targetPercentile.toString().replace("+", ""))
+    : planContext.profile.targetpercentile;
+
+planContext.profile.targetcolleges =
+  Array.isArray(dto.targetColleges)
+    ? dto.targetColleges.join(", ")
+    : dto.targetColleges ?? planContext.profile.targetcolleges;
+
+planContext.profile.attemptyear =
+  dto.attemptYear
+    ? Number(dto.attemptYear)
+    : planContext.profile.attemptyear;
+
 const engine = new StudyPlanEngine();
+console.log("========== DTO ==========");
+console.log(dto);
+
+console.log("Target Exam =>", dto.targetExam);
+console.log("Target Percentile =>", dto.targetPercentile);
+console.log("Target Colleges =>", dto.targetColleges);
+console.log("Attempt Year =>", dto.attemptYear);
 
 const generatedPlan =
   engine.generate(planContext);
 
+console.log("========== GENERATED PLAN ==========");
+console.log(generatedPlan);
 
-        const examDate =
-  new Date();
+  console.log("========== GENERATED PLAN ==========");
+console.log(generatedPlan);
+console.log("Monthly Plan:", generatedPlan.monthlyPlan);
+console.log("Weekly Plan:", generatedPlan.weeklyPlan);
+console.log("Daily Tasks:", generatedPlan.dailyTasks);
+console.log("Revision Plan:", generatedPlan.revisionPlan);
+console.log("====================================");
 
-examDate.setMonth(
-  examDate.getMonth() + 6,
+
+        const attemptYear = Number(
+  dto.attemptYear ??
+  profile.attemptyear ??
+  new Date().getFullYear()
 );
-    const studyPlan =
-      await this.prisma.studyplan.create({
-        data: {
-          userid: userId,
+// Assume CAT/SNAP exam is on 30 November of the selected year
+const examDate = new Date(attemptYear, 10, 30);
+   const studyPlan = await this.prisma.studyplan.create({
+  data: {
+    userid: userId,
 
-          targetexam:
-            profile.targetexam ?? 'CAT',
+    targetexam:
+      dto.targetExam ?? profile.targetexam ?? "CAT",
 
-          targetpercentile:
-            profile.targetpercentile ?? 90,
+    targetpercentile:
+      dto.targetPercentile
+        ? Number(dto.targetPercentile.toString().replace("+", ""))
+        : (profile.targetpercentile ?? 90),
 
-            examdate: examDate,
+    targetcolleges:
+      Array.isArray(dto.targetColleges)
+        ? dto.targetColleges.join(", ")
+        : dto.targetColleges ?? profile.targetcolleges ?? null,
+
+    attemptyear:
+      dto.attemptYear?.toString() ??
+      profile.attemptyear?.toString() ??
+      null,
+
+    examdate: examDate,
+
+    roadmap: generatedPlan.roadmap,
+    monthlyplan: generatedPlan.monthlyPlan,
+    weeklyplan: generatedPlan.weeklyPlan,
+    dailytasks: generatedPlan.dailyTasks,
+    revisionplan: generatedPlan.revisionPlan,
+  },
+});
 
 
-          roadmap: generatedPlan.roadmap,
+// DO NOT REMOVE THIS COMMENT
+// Today's dynamic tasks will be created here.
 
-monthlyplan: generatedPlan.monthlyPlan,
 
-weeklyplan: generatedPlan.weeklyPlan,
+const subjectTopics: Record<string, string[]> = {
+  "Quantitative Aptitude": [
+    "Arithmetic",
+    "Percentages",
+    "Profit & Loss",
+    "Simple Interest",
+    "Compound Interest",
+    "Time & Work",
+    "Time Speed Distance",
+    "Ratio & Proportion",
+    "Averages",
+    "Mixtures & Allegations",
+    "Algebra",
+    "Geometry",
+    "Mensuration",
+    "Permutation & Combination",
+    "Probability",
+    "Number System",
+    "Modern Math",
+  ],
 
-dailytasks: generatedPlan.dailyTasks,
+  DILR: [
+    "Linear Arrangement",
+    "Circular Arrangement",
+    "Blood Relations",
+    "Direction Sense",
+    "Games & Tournament",
+    "Selection",
+    "Scheduling",
+    "Caselets",
+    "Tables DI",
+    "Bar Graph DI",
+    "Pie Chart DI",
+    "Line Graph DI",
+    "Venn Diagram",
+    "Logical Reasoning",
+    "Puzzles",
+  ],
 
-revisionplan: generatedPlan.revisionPlan,
-        },
-      });
+  VARC: [
+    "Reading Comprehension",
+    "Vocabulary",
+    "Para Jumbles",
+    "Odd One Out",
+    "Summary Questions",
+    "Sentence Completion",
+    "Grammar",
+    "Critical Reasoning",
+    "Inference",
+    "Tone of Passage",
+  ],
+};
 
-    return studyPlan;
+const generatedTasks: {
+  subject: string;
+  topic: string;
+  priority: string;
+}[] = [];
+
+// 1. Add weak topics first (Highest Priority)
+for (const weakTopic of weakTopicNames) {
+  let subject = "Quantitative Aptitude";
+
+  if (
+    weakTopic.toLowerCase().includes("reading") ||
+    weakTopic.toLowerCase().includes("grammar") ||
+    weakTopic.toLowerCase().includes("vocabulary") ||
+    weakTopic.toLowerCase().includes("para")
+  ) {
+    subject = "VARC";
+  } else if (
+    weakTopic.toLowerCase().includes("logical") ||
+    weakTopic.toLowerCase().includes("arrangement") ||
+    weakTopic.toLowerCase().includes("blood") ||
+    weakTopic.toLowerCase().includes("puzzle") ||
+    weakTopic.toLowerCase().includes("graph") ||
+    weakTopic.toLowerCase().includes("caselet")
+  ) {
+    subject = "DILR";
   }
+
+  generatedTasks.push({
+    subject,
+    topic: weakTopic,
+    priority: "Critical",
+  });
+}
+
+// 2. Add remaining syllabus
+Object.entries(subjectTopics).forEach(([subject, topics]) => {
+  topics.forEach((topic, index) => {
+
+    if (
+      generatedTasks.some(
+        t => t.topic.toLowerCase() === topic.toLowerCase()
+      )
+    ) {
+      return;
+    }
+
+    generatedTasks.push({
+      subject,
+      topic,
+      priority: index < 6 ? "High" : "Medium",
+    });
+
+  });
+});
+
+for (const item of generatedTasks) {
+  const task = await this.prisma.studyTask.create({
+    data: {
+      studyPlanId: studyPlan.id,
+
+      userId,
+
+      subject: item.subject,
+
+      topic: item.topic,
+
+      priority: item.priority,
+
+      duration:
+        item.priority === "Critical"
+          ? 90
+          : item.priority === "High"
+          ? 60
+          : 45,
+
+      status: "PENDING",
+
+      resources: {
+  topic: item.topic,
+
+  videos: [
+    {
+      title: `${item.topic} Complete Lecture`,
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        item.topic + " CAT"
+      )}`,
+    },
+    {
+      title: `${item.topic} Short Tricks`,
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        item.topic + " shortcuts"
+      )}`,
+    },
+  ],
+
+  pdfs: [
+    {
+      title: `${item.topic} Notes`,
+      url: `https://www.google.com/search?q=${encodeURIComponent(
+        item.topic + " pdf CAT"
+      )}`,
+    },
+  ],
+
+  practice: [
+    {
+      title: `${item.topic} Practice Questions`,
+      url: `https://www.google.com/search?q=${encodeURIComponent(
+        item.topic + " practice questions CAT"
+      )}`,
+    },
+  ],
+
+  mocks: [
+    {
+      title: `${item.topic} Mock Test`,
+      url: `https://www.google.com/search?q=${encodeURIComponent(
+        item.topic + " mock test"
+      )}`,
+    },
+  ],
+},
+    },
+  });
+
+  console.log("TASK CREATED =>", task.topic);
+}
+return studyPlan;  }
 
   async latest(userId: string) {
     return this.prisma.studyplan.findFirst({
@@ -235,11 +467,31 @@ revisionplan: generatedPlan.revisionPlan,
     });
   }
 
+  
   async getOne(id: string) {
   return this.prisma.studyplan.findUnique({
     where: {
       id,
     },
   });
+}
+
+async getTasks(userId: string) {
+  console.log("========== GET TASKS ==========");
+  console.log("User ID:", userId);
+
+  const tasks = await this.prisma.studyTask.findMany({
+    where: {
+      userId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  console.log("Tasks Found:", tasks.length);
+  console.log(tasks);
+
+  return tasks;
 }
 }

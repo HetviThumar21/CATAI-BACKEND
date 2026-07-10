@@ -18,7 +18,8 @@ import { CollegeImportModule } from './modules/college-import/college-import.mod
 import { MocktestModule } from './modules/mocktest/mocktest.module';
 import { TopicPerformanceModule } from './modules/topic-performance/topic-performance.module';
 import { ResourcesModule } from './modules/resources/resources.module';
-
+import { StudyResourceModule } from "./modules/study-resource/study-resource.module";
+import { MockLibraryModule } from './modules/mock-library/mock-library.module';
 @Module({
   imports: [
     PrismaModule,
@@ -35,7 +36,10 @@ import { ResourcesModule } from './modules/resources/resources.module';
     CollegeImportModule,
     MocktestModule,
     TopicPerformanceModule,
-    ResourcesModule,  ],
+    ResourcesModule, 
+    StudyResourceModule,
+    MockLibraryModule,
+  ],
   controllers: [
     AppController,
   ],

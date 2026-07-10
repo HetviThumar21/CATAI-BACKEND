@@ -40,6 +40,12 @@ export class CatgptController {
     );
   }
 
+  @Get('dashboard-insight')
+@UseGuards(JwtAuthGuard)
+dashboardInsight(@Req() req) {
+  return this.catgptService.dashboardInsight(req.user.id);
+}
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   getOne(

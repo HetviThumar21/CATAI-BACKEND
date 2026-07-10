@@ -57,25 +57,27 @@ export class AnalyticsService {
       });
 
     return {
-      profileScore:
-        latestReport?.overallscore ?? 0,
+  profileScore: latestReport?.overallscore ?? 0,
 
-      targetPercentile:
-        latestProfile?.targetpercentile ?? 0,
+  targetPercentile: latestProfile?.targetpercentile ?? 0,
 
-      reportsGenerated,
+  reportsGenerated,
 
-      catgptConversations,
+  catgptConversations,
 
-      studyPlans,
+  studyPlans,
 
-      collegePredictions,
+  collegePredictions,
 
-      roadmap:
-        latestReport?.roadmap ?? '',
+  roadmap: latestReport?.roadmap ?? '',
 
-      gapAnalysis:
-        latestReport?.gapanalysis ?? '',
-    };
+  gapAnalysis: latestReport?.gapanalysis ?? '',
+
+  totalActivities:
+    reportsGenerated +
+    catgptConversations +
+    studyPlans +
+    collegePredictions,
+};
   }
 }

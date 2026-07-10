@@ -27,6 +27,7 @@ model user {
   chats              chat[]
   profileevaluations profileevaluation[]
   studyplans         studyplan[]
+  studyTasks         StudyTask[]
   collegepredictions collegeprediction[]
   tasks              task[]
   mockTests          MockTest[]
@@ -130,6 +131,8 @@ model studyplan {
 
   targetexam       String
   targetpercentile Float
+  targetcolleges    String?
+  attemptyear       String?
   examdate         DateTime
 
   roadmap      String @db.Text
@@ -137,6 +140,9 @@ model studyplan {
   weeklyplan   String @db.Text
   dailytasks   String @db.Text
   revisionplan String @db.Text
+
+  studyTasks StudyTask[]
+
 
   createdat DateTime @default(now())
 }
@@ -399,3 +405,97 @@ model StudyResource {
 
   createdAt DateTime @default(now())
 }
+
+model StudyTask {
+  id String @id @default(cuid())
+
+  studyPlanId String
+  studyPlan studyplan @relation(fields: [studyPlanId], references: [id])
+
+  userId String
+  user user @relation(fields: [userId], references: [id])
+
+  subject String
+  topic String
+
+  priority String
+
+  duration Int
+
+  status String @default("PENDING")
+
+  resources Json?
+
+  startedAt DateTime?
+  completedAt DateTime?
+  skippedAt DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+model MockLibrary {
+  id              String   @id @default(cuid())
+  exam            String
+  category        String
+  section         String?
+  topic           String?
+  title           String
+  difficulty      String
+  duration        Int
+  totalQuestions  Int
+  isPremium       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+
+  questions        MockQuestion[]
+  attempts         MockAttempt[]
+
+  createdAt DateTime @default(now())
+}
+
+model MockQuestion {
+  id              String   @id @default(cuid())
+
+  mockId          String
+  mock            MockLibrary @relation(fields: [mockId], references: [id], onDelete: Cascade)
+
+  question        String
+
+  optionA         String
+  optionB         String
+  optionC         String
+  optionD         String
+
+  correctAnswer   String
+  explanation     String?
+
+  marks           Float @default(3)
+  negativeMarks   Float @default(1)
+
+  difficulty      String
+
+  createdAt       DateTime @default(now())
+}
+
+model MockAttempt {
+  id            String @id @default(cuid())
+
+  userId        String
+
+  mockId        String
+  mock          MockLibrary @relation(fields: [mockId], references: [id], onDelete: Cascade)
+
+  score         Float @default(0)
+  percentile    Float @default(0)
+
+  correct       Int @default(0)
+  wrong         Int @default(0)
+  skipped       Int @default(0)
+
+  accuracy      Float @default(0)
+
+  startedAt     DateTime @default(now())
+  submittedAt   DateTime?
+}
+
+
+

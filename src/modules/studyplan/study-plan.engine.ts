@@ -90,9 +90,49 @@ ${
 `;
 }
 
-  private buildMonthlyPlan(context: StudyPlanContext): string {
-    return "";
-  }
+  private buildMonthlyPlan(
+  context: StudyPlanContext,
+): string {
+
+  const {
+    profile,
+    latestReport,
+    weakTopicNames,
+  } = context;
+
+  const month1 = weakTopicNames[0] ?? "Quantitative Aptitude";
+  const month2 = weakTopicNames[1] ?? "Data Interpretation & Logical Reasoning";
+  const month3 = weakTopicNames[2] ?? "Verbal Ability & Reading Comprehension";
+
+  return `
+Month 1
+• Build strong fundamentals in ${month1}
+• Study daily for ${profile.dailystudyhours ?? 3} hours
+• Complete topic-wise practice
+• Attempt one sectional test every week
+
+Month 2
+• Strengthen ${month2}
+• Increase mock test frequency
+• Improve speed and accuracy
+• Analyse mistakes after every test
+
+Month 3
+• Master ${month3}
+• Attempt 2 Full-Length CAT Mocks every week
+• Focus on weak areas
+• Complete revision cycles
+
+Final Month
+• Full syllabus revision
+• Mock analysis
+• Time management
+• Strategy refinement
+
+Target Percentile: ${profile.targetpercentile ?? 90}
+Current Profile Score: ${latestReport.overallscore}/100
+`;
+}
 
   private buildWeeklyPlan(
   context: StudyPlanContext,

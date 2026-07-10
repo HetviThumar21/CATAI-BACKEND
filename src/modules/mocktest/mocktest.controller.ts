@@ -19,16 +19,16 @@ export class MocktestController {
     @Req() req,
     @Body() dto: CreateMockTestDto,
   ) {
-    return this.service.create(req.user.userId, dto);
+    return this.service.create(req.user.id, dto);
   }
 
   @Get('history')
   history(@Req() req) {
-    return this.service.history(req.user.userId);
+    return this.service.history(req.user.id);
   }
 
   @Get('latest')
   latest(@Req() req) {
-    return this.service.latest(req.user.userId);
+    return this.service.latest(req.user.id);
   }
 }

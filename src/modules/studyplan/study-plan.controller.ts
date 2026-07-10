@@ -1,11 +1,12 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   Post,
   Req,
   UseGuards,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -18,12 +19,16 @@ export class StudyPlanController {
   ) {}
 
   @Post('generate')
-  @UseGuards(JwtAuthGuard)
-  generate(@Req() req) {
-    return this.studyPlanService.generate(
-      req.user.id,
-    );
-  }
+@UseGuards(JwtAuthGuard)
+generate(
+  @Req() req,
+  @Body() body,
+) {
+  return this.studyPlanService.generate(
+    req.user.id,
+    body,
+  );
+}
 
   @Get('latest')
   @UseGuards(JwtAuthGuard)
@@ -40,6 +45,14 @@ export class StudyPlanController {
       req.user.id,
     );
   }
+
+  @Get("tasks")
+@UseGuards(JwtAuthGuard)
+getTasks(@Req() req) {
+  return this.studyPlanService.getTasks(
+    req.user.id,
+  );
+}
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
